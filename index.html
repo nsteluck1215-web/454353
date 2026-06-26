@@ -258,26 +258,26 @@
 
           <div style="background:#fff;border-radius:20px;padding:clamp(24px,3vw,36px);">
             <sc-if value="{{ notSubmitted }}" hint-placeholder-val="{{ true }}">
-              <form onSubmit="{{ handleSubmit }}">
+              <form id="lsy-lead-form" onSubmit="{{ handleSubmit }}">
                 <div class="lsy-form-2" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
                   <div>
                     <label style="display:block;font-weight:600;font-size:14px;color:#1A2E4A;margin-bottom:8px;">이름 / 회사명</label>
-                    <input type="text" required placeholder="홍길동 / OO상회" style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;"/>
+                    <input id="lf-name" type="text" required placeholder="홍길동 / OO상회" style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;"/>
                   </div>
                   <div>
                     <label style="display:block;font-weight:600;font-size:14px;color:#1A2E4A;margin-bottom:8px;">업종</label>
-                    <input type="text" placeholder="예: 카페, 의류, 헬스" style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;"/>
+                    <input id="lf-industry" type="text" placeholder="예: 카페, 의류, 헬스" style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;"/>
                   </div>
                 </div>
                 <div style="margin-bottom:18px;">
                   <label style="display:block;font-weight:600;font-size:14px;color:#1A2E4A;margin-bottom:8px;">연락처 (이메일 또는 전화)</label>
-                  <input type="text" required placeholder="contact@email.com / 010-0000-0000" style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;"/>
+                  <input id="lf-contact" type="text" required placeholder="contact@email.com / 010-0000-0000" style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;"/>
                 </div>
                 <div style="margin-bottom:24px;">
                   <label style="display:block;font-weight:600;font-size:14px;color:#1A2E4A;margin-bottom:8px;">문의 내용</label>
-                  <textarea rows="4" placeholder="현재 고민이나 목표를 알려주세요." style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;resize:vertical;"></textarea>
+                  <textarea id="lf-message" rows="4" placeholder="현재 고민이나 목표를 알려주세요." style="width:100%;background:#fff;border:1px solid #D4DEE8;border-radius:8px;padding:13px 14px;font-family:'Noto Sans KR',sans-serif;font-size:15px;color:#1A2E4A;resize:vertical;"></textarea>
                 </div>
-                <button type="submit" style="width:100%;background:#1A2E4A;color:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:17px;padding:16px;border:none;border-radius:50px;cursor:pointer;letter-spacing:-0.01em;">무료 상담 신청하기</button>
+                <button id="lf-submit" type="submit" style="width:100%;background:#1A2E4A;color:#fff;font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:17px;padding:16px;border:none;border-radius:50px;cursor:pointer;letter-spacing:-0.01em;">무료 상담 신청하기</button>
                 <p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#8A94A2;text-align:center;">제출 시 개인정보 처리방침에 동의하는 것으로 간주됩니다.</p>
               </form>
             </sc-if>
@@ -359,5 +359,38 @@ class Component extends DCLogic {
 }
 </script>
 <script src="./chatbot.js"></script>
+<script>
+(function () {
+  var form = document.getElementById('lsy-lead-form');
+  if (!form) return;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var btn = document.getElementById('lf-submit');
+    btn.disabled = true;
+    btn.textContent = '제출 중...';
+    fetch('/api/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name:     document.getElementById('lf-name').value.trim(),
+        industry: document.getElementById('lf-industry').value.trim(),
+        contact:  document.getElementById('lf-contact').value.trim(),
+        message:  document.getElementById('lf-message').value.trim(),
+      }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function () {
+      btn.textContent = '신청 완료!';
+      form.querySelectorAll('input,textarea').forEach(function(el){ el.value=''; });
+      setTimeout(function(){ btn.disabled=false; btn.textContent='무료 상담 신청하기'; }, 3000);
+    })
+    .catch(function () {
+      btn.disabled = false;
+      btn.textContent = '무료 상담 신청하기';
+      alert('제출 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    });
+  });
+})();
+</script>
 </body>
 </html>

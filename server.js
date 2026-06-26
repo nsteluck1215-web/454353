@@ -1,7 +1,11 @@
+require('dotenv').config();
+
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { buildSystemPrompt, callOpenAI } = require('./api/chat');
+
+const chatHandler = require('./api/chat');
+const leadHandler = require('./api/lead');
 
 const PORT = process.env.PORT || 3000;
 
@@ -17,32 +21,48 @@ const MIME = {
   '.md':   'text/markdown; charset=utf-8',
 };
 
-const server = http.createServer(async (req, res) => {
-  /* ── /api/chat ── */
-  if (req.method === 'POST' && req.url === '/api/chat') {
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
     let body = '';
     req.on('data', c => (body += c));
-    req.on('end', async () => {
-      try {
-        const { messages } = JSON.parse(body);
-        const systemPrompt = buildSystemPrompt();
-        const reply = await callOpenAI(systemPrompt, messages);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ reply }));
-      } catch (err) {
-        console.error(err);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: err.message }));
-      }
+    req.on('end', () => {
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch (e) { reject(e); }
     });
-    return;
+  });
+}
+
+/* req.body를 채워주는 래퍼 — Vercel과 인터페이스 통일 */
+function makeRes(res) {
+  return {
+    status(code) { this._code = code; return this; },
+    json(obj) {
+      res.writeHead(this._code || 200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(obj));
+    },
+    _code: 200,
+  };
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = req.url.split('?')[0];
+
+  /* ── API 라우트 ── */
+  if (req.method === 'POST' && (url === '/api/chat' || url === '/api/lead')) {
+    try {
+      req.body = await parseBody(req);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Invalid JSON' }));
+      return;
+    }
+    const fakeRes = makeRes(res);
+    if (url === '/api/chat') return chatHandler(req, fakeRes);
+    if (url === '/api/lead') return leadHandler(req, fakeRes);
   }
 
-  /* ── static files ── */
-  let urlPath = req.url.split('?')[0];
-  if (urlPath === '/') urlPath = '/index.html';
-
-  const filePath = path.join(__dirname, urlPath);
+  /* ── 정적 파일 ── */
+  let filePath = path.join(__dirname, url === '/' ? 'index.html' : url);
 
   fs.readFile(filePath, (err, data) => {
     if (err) {

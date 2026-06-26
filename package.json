@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "ingest": "node scripts/ingest.js"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "@supabase/supabase-js": "^2.43.4",
+    "dotenv": "^16.4.5",
+    "openai": "^4.52.7"
   }
 }
