@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const OpenAI = require('openai');
 const { createClient } = require('@supabase/supabase-js');
+const ws = require('ws');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -14,7 +15,7 @@ function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
-  return createClient(url, key);
+  return createClient(url, key, { realtime: { transport: ws } });
 }
 
 /* ── 폴백: 전체 파일 주입 ── */

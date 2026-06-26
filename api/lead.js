@@ -1,6 +1,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
 
 const { createClient } = require('@supabase/supabase-js');
+const ws = require('ws');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -24,7 +25,7 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  const supabase = createClient(url, key);
+  const supabase = createClient(url, key, { realtime: { transport: ws } });
 
   const { error } = await supabase.from('leads').insert({ name, industry, contact, message });
 

@@ -8,11 +8,13 @@ const fs = require('fs');
 const path = require('path');
 const OpenAI = require('openai');
 const { createClient } = require('@supabase/supabase-js');
+const ws = require('ws');
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  { realtime: { transport: ws } }
 );
 
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
